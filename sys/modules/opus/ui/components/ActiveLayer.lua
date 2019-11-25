@@ -7,7 +7,7 @@ UI.ActiveLayer.defaults = {
 }
 function UI.ActiveLayer:layout()
 	UI.Window.layout(self)
-	if not self.canvas then
+	if not self.canvas or not self.canvas.layers then
 		self.canvas = self:addLayer()
 	else
 		self.canvas:resize(self.width, self.height)

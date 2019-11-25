@@ -118,6 +118,7 @@ function input:translate(event, code, p1, p2)
 		local buttons = { 'mouse_click', 'mouse_rightclick' }
 		self.mch = buttons[code]
 		self.mfired = nil
+		self.anchor = { x = p1, y = p2 }
 		return {
 			code = input:toCode('mouse_down', 255),
 			button = code,
@@ -132,6 +133,8 @@ function input:translate(event, code, p1, p2)
 			button = code,
 			x = p1,
 			y = p2,
+			dx = p1 - self.anchor.x,
+			dy = p2 - self.anchor.y,
 		}
 
 	elseif event == 'mouse_up' then

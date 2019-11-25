@@ -13,6 +13,48 @@ local os         = _G.os
 local term       = _G.term
 local textutils  = _G.textutils
 
+local PassThroughCanvas = class()
+function PassThroughCanvas:init(args)
+	Util.merge(self, args)
+end
+
+function PassThroughCanvas:clear(bg, fg)
+	local filler = _rep(' ', self.width)
+	for i = 1, self.height do
+		self:write(1, i, filler, bg, fg)
+	end
+end
+
+function PassThroughCanvas:write(x, y, text, bg, fg)
+	bg = bg or self.window.backgroundColor
+	fg = fg or self.window.textColor
+	x = x - self.window.offx
+	y = y - self.window.offy
+	if y <= self.height and y > 0 then
+		self.parent:write(
+			self.x + x - 1, self.y + y - 1, tostring(text), bg, fg)
+	end
+end
+
+function PassThroughCanvas:resize(w, h)
+	self.width = w
+	self.height = h
+	self.ex = self.x + self.width - 1
+	self.ey = self.y + self.height - 1
+end
+
+function PassThroughCanvas:move(x, y)
+	self.x, self.y = x, y
+	self.ex = self.x + self.width - 1
+	self.ey = self.y + self.height - 1
+end
+
+function PassThroughCanvas:raise()
+end
+
+function PassThroughCanvas:setVisible()
+end
+
 --[[
 	Using the shorthand window definition, elements are created from
 	the bottom up. Once reaching the top, setParent is called top down.
@@ -118,6 +160,7 @@ function Manager:init()
 
 			if ie.code == 'control-shift-mouse_click' then -- hack
 				local event = currentPage:pointToChild(x, y)
+_G._p = event.element
 				_ENV.multishell.openTab({
 					path = 'sys/apps/Lua.lua',
 					args = { event.element },
@@ -135,7 +178,7 @@ function Manager:init()
 			local currentPage = self:getActivePage()
 
 			if ie and currentPage then
-				self:click(currentPage, ie.code, button, x, y)
+				self:click(currentPage, ie.code, button, ie.dx, ie.dy)
 			end
 		end,
 
@@ -252,7 +295,21 @@ function Manager:inputEvent(parent, event) -- deprecate ?
 end
 
 function Manager:click(target, code, button, x, y)
-	local clickEvent = target:pointToChild(x, y)
+	local clickEvent
+
+	if code == 'mouse_drag' then
+		clickEvent = {
+			element = self.__maybeWillDrag,
+			x = x,
+			y = y,
+		}
+	else
+		clickEvent = target:pointToChild(x, y)
+
+		if code == 'mouse_down' then
+			self.__maybeWillDrag = clickEvent.element
+		end
+	end
 
 	if code == 'mouse_doubleclick' then
 		if self.doubleClickElement ~= clickEvent.element then
@@ -531,15 +588,30 @@ function UI.Window:layout()
 	if not self.height then
 		self.height = self.parent.height - self.y + 1
 	end
+
+	if not self.canvas then
+		self.canvas = self:addLayer()
+
+		--[[self.canvas = PassThroughCanvas {
+			parent = self.parent,
+			window = self,
+			x = self.x,
+			y = self.y,
+			width = self.width,
+			height = self.height,
+			ex = self.x + self.width - 1,
+			ey = self.y + self.height - 1,
+		}
+		]]
+
+	else
+		self.canvas:resize(self.width, self.height)
+	end
+
 end
 
 -- Called when the window's parent has be assigned
 function UI.Window:setParent()
-	self.oh, self.ow = self.height, self.width
-	self.ox, self.oy = self.x, self.y
-
-	self:layout()
-
 	-- Experimental
 	-- Inherit properties from the parent container
 	-- does this need to be in reverse order ?
@@ -556,7 +628,33 @@ function UI.Window:setParent()
 		m = m._base
 	until not m
 
+	self.oh, self.ow = self.height, self.width
+	self.ox, self.oy = self.x, self.y
+
+	self:layout()
+
 	self:initChildren()
+end
+
+function UI.Window:move(x, y)
+	self.x = x
+	self.y = y
+	self.canvas:move(x, y)
+	--self.parent:draw()
+end
+
+function UI.Window:reposition(x, y, w, h)
+	if self.width ~= w or self.height ~= h then
+		self.height = h
+		self.width = w
+		self.canvas:resize(w, h)
+		for _,v in pairs(self.children) do
+			v:resize()
+		end
+	end
+	if self.x ~= x or self.y ~= y then
+		self:move(x, y)
+	end
 end
 
 function UI.Window:resize()
@@ -634,6 +732,7 @@ end
 
 function UI.Window:enable(...)
 	self.enabled = true
+	self.canvas:setVisible(true)
 	if self.children then
 		for _,child in pairs(self.children) do
 			child:enable(...)
@@ -658,11 +757,7 @@ end
 UI.Window.docs.clear = [[clear(opt COLOR bg, opt COLOR fg)
 Clears the window using the either the passed values or the defaults for that window.]]
 function UI.Window:clear(bg, fg)
-	if self.canvas then
-		self.canvas:clear(bg or self:getProperty('backgroundColor'), fg or self:getProperty('textColor'))
-	else
-		self:clearArea(1 + self.offx, 1 + self.offy, self.width, self.height, bg)
-	end
+	self.canvas:clear(bg or self:getProperty('backgroundColor'), fg or self:getProperty('textColor'))
 end
 
 function UI.Window:clearLine(y, bg)
@@ -681,17 +776,7 @@ end
 function UI.Window:write(x, y, text, bg, fg)
 	bg = bg or self.backgroundColor
 	fg = fg or self.textColor
-
-	if self.canvas then
-		self.canvas:write(x, y, text, bg or self:getProperty('backgroundColor'), fg or self:getProperty('textColor'))
-	else
-		x = x - self.offx
-		y = y - self.offy
-		if y <= self.height and y > 0 then
-			self.parent:write(
-				self.x + x - 1, self.y + y - 1, tostring(text), bg, fg)
-		end
-	end
+	self.canvas:write(x, y, text, bg or self:getProperty('backgroundColor'), fg or self:getProperty('textColor'))
 end
 
 function UI.Window:centeredWrite(y, text, bg, fg)
@@ -825,8 +910,13 @@ function UI.Window:pointToChild(x, y)
 	-- TODO: get rid of this offx/y mess and scroll canvas instead
 	x = x + self.offx - self.x + 1
 	y = y + self.offy - self.y + 1
+
 	if self.children then
-		for _,child in pairs(self.children) do
+if Util.size(self.children) ~= #self.children then
+	error('children is not an array')
+end
+		for i = #self.children, 1, -1 do
+			local child = self.children[i]
 			if child.enabled and not child.inactive and
 				 x >= child.x and x < child.x + child.width and
 				 y >= child.y and y < child.y + child.height then
@@ -921,10 +1011,20 @@ function UI.Window:scrollIntoView()
 	end
 end
 
+function UI.Window:raise()
+	local w = Util.contains(self.parent.children, self)
+	if self ~= self.parent.children[#self.parent.children] then
+		table.remove(self.parent.children, w)
+		table.insert(self.parent.children, self)
+		self.canvas:raise()
+		self:draw()
+	end
+end
+
 function UI.Window:getCanvas()
 	local el = self
 	repeat
-		if el.canvas then
+		if el.canvas and el.canvas.layers then
 			return el.canvas
 		end
 		el = el.parent
@@ -935,7 +1035,7 @@ function UI.Window:addLayer(bg, fg)
 	local canvas = self:getCanvas()
 	local x, y = self.x, self.y
 	local parent = self.parent
-	while parent and not parent.canvas do
+	while parent and not (parent.canvas and parent.canvas.layers) do
 		x = x + parent.x - 1
 		y = y + parent.y - 1
 		parent = parent.parent

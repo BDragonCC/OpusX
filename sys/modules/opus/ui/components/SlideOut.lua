@@ -8,7 +8,7 @@ UI.SlideOut.defaults = {
 }
 function UI.SlideOut:layout()
 	UI.Window.layout(self)
-	if not self.canvas then
+	if not self.canvas or not self.canvas.layers then
 		self.canvas = self:addLayer()
 	else
 		self.canvas:resize(self.width, self.height)
@@ -61,17 +61,27 @@ end
 function UI.SlideOut.example()
 	-- for the transistion to work properly, the parent must have a canvas
 	return UI.ActiveLayer {
-		y = 2,
+		--y = 2,
 		button = UI.Button {
 			x = 2, y = 5,
 			text = 'show',
 		},
 		slideOut = UI.SlideOut {
 			backgroundColor = _G.colors.yellow,
-			y = -4, height = 4, x = 3, ex = -3,
-			button = UI.Button {
-				x = 2, y = 2,
+			y = -4, height = 4, x = 5, ex = -5,
+			titleBar = UI.TitleBar { title = 'example', expand = 'height', event='slide_hide' },
+			grid = UI.ScrollingGrid {
+				x = 2, ex = -2, y = 3, ey = -2,
 				text = 'hide',
+				columns = {
+					{ heading = 'test', key = 'abc' }
+				},
+				values = {
+					{ abc = '1234556' },
+					{ abc = 'asdfsfd' },
+					{ abc = '12fasfdsdf34556' },
+					{ abc = 'sdf vss fd' },
+				}
 			},
 		},
 		eventHandler = function (self, event)

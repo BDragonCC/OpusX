@@ -9,7 +9,7 @@ local colors = _G.colors
 
 local Canvas = class()
 
-Canvas.__visualize = false
+Canvas.__visualize = true
 Canvas.colorPalette = { }
 Canvas.darkPalette = { }
 Canvas.grayscalePalette = { }
@@ -399,8 +399,8 @@ function Canvas:__blitRect(device, src, tgt)
 			end
 		end
 		if drew then
-			local t = os.clock()
-			repeat until os.clock()-t > .2
+			local t2 = os.clock()
+			repeat until os.clock()-t2 > .2
 		end
 	end
 	for i = 0, src.ey - src.y do

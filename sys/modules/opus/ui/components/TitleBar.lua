@@ -69,5 +69,65 @@ function UI.TitleBar:eventHandler(event)
 			end
 			return true
 		end
+
+	elseif event.type == 'mouse_down' then
+		self.anchor = { x = event.x, y = event.y, ox = self.parent.x, oy = self.parent.y, h = self.parent.height }
+
+	elseif event.type == 'mouse_drag' then
+		if self.expand == 'height' then
+			local d = event.y
+			if self.anchor.h - d > 0 and self.anchor.oy + d > 0 then
+				self.parent:reposition(self.parent.x, self.anchor.oy + event.y, self.width, self.anchor.h - d)
+				self.parent.parent:draw()
+			end
+
+		elseif self.moveable then
+			local d = event.y
+			if self.anchor.oy + d > 0 and self.anchor.oy + d <= self.parent.parent.height then
+				self.parent:move(self.anchor.ox + event.x, self.anchor.oy + event.y)
+				self.parent.parent:draw()
+			end
+		end
 	end
+end
+
+function UI.TitleBar.example()
+	return UI.Window {
+		win1 = UI.Window {
+			x = 9, y = 2, ex = -9, ey = -3,
+			backgroundColor = colors.green,
+			titleBar = UI.TitleBar {
+				title = 'test',  moveable = true,
+			},
+			focus = function (self)
+				self:raise()
+			end,
+		},
+		win2 = UI.Window {
+			x = 7, y = 2, ex = -7, ey = -2,
+			backgroundColor = colors.orange,
+			titleBar = UI.TitleBar {
+				title = 'test', moveable = true,
+			},
+			focus = function (self)
+				self:raise()
+			end,
+		},
+		draw = function(self)
+			for i = 1, self.height do
+				self:write(1, i, self.bg or '')
+			end
+			for _,v in pairs(self.children) do
+				v:draw()
+			end
+		end,
+		enable = function (self)
+			require('opus.event').onInterval(15, function()
+				self.bg = string.rep(string.char(math.random(33, 126)), self.width)
+				self:draw()
+				self:sync()
+			end)
+			UI.Window.enable(self)
+		end
+	}
 end

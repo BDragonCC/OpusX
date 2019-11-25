@@ -32,7 +32,7 @@ function UI.DropMenu:layout()
 	self.height = #self.children + 1
 	self.width = maxWidth + 2
 
-	if not self.canvas then
+	if not self.canvas or not self.canvas.layers then
 		self.canvas = self:addLayer()
 	else
 		self.canvas:resize(self.width, self.height)

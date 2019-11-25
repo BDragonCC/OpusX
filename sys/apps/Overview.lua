@@ -83,6 +83,7 @@ function UI.VerticalTabBar:setParent()
 		c.ox, c.oy = c.x, c.y
 		c.ow = 8
 		c.width = 8
+		c:move(c.x, c.y)
 	end
 end
 
@@ -376,6 +377,7 @@ function page.container:setCategory(categoryName, animate)
 					child.tween:update(1)
 					child.x = math.floor(child.x)
 					child.y = math.floor(child.y)
+					child:move(child.x, child.y)
 					child:draw()
 				end
 				i = i + 1

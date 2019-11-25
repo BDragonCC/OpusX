@@ -56,6 +56,7 @@ end
 
 function UI.Tabs:enable()
 	self.enabled = true
+	self.canvas:setVisible(true)
 	self.transitionHint = nil
 	self.tabBar:enable()
 

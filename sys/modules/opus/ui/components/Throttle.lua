@@ -46,7 +46,7 @@ function UI.Throttle:update()
 		os.sleep(0)
 		self.c = os.clock()
 		self.enabled = true
-		if not self.canvas then
+		if not self.canvas or not self.canvas.layers then
 			self.canvas = self:addLayer(self.backgroundColor, self.borderColor)
 			self.canvas:setVisible(true)
 			self:clear(self.borderColor)

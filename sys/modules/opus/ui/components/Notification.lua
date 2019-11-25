@@ -43,7 +43,7 @@ function UI.Notification:cancel()
 		self.timer = nil
 	end
 
-	if self.canvas then
+	if self.canvas and self.canvas.layers then
 		self.enabled = false
 		self.canvas:removeLayer()
 		self.canvas = nil
