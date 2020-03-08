@@ -1,4 +1,8 @@
-# Opus OS for computercraft
+# OpusX for computercraft
+
+## Credits
+* Kepler155c for Opus OS
+http://www.computercraft.info/forums2/index.php?/topic/27810-opus-os/ - Original Thread
 
 ## Features
 * Multitasking OS - run programs in separate tabs
@@ -14,5 +18,5 @@
 
 ## Install
 ```
-pastebin run uzghlbnc
+pastebin run f18XU681
 ```
